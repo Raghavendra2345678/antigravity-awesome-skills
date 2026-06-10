@@ -1,0 +1,22 @@
+﻿using Server.Reawakened.Entities.Enemies.Behaviors.Abstractions;
+using Server.Reawakened.Entities.Enemies.EnemyTypes;
+using Server.Reawakened.XMLs.Data.Enemy.Enums;
+
+namespace Server.Reawakened.Entities.Enemies.Behaviors;
+
+public class AIBehaviorStomper(BehaviorEnemy enemy, StomperProperties fallback) : AIBaseBehavior(enemy.AiData, enemy.Room)
+{
+    public override bool ShouldDetectPlayers => false;
+    public override bool ShouldAggroOnHit => false;
+
+    public override AiProperties GetProperties() => fallback;
+
+    public override object[] GetStartArgs() => [];
+
+    public override StateType GetStateType() => StateType.Stomper;
+
+    public override void NextState() =>
+        enemy.ChangeBehavior(StateType.LookAround, enemy.Position.X, enemy.Position.Y, enemy.Generic.Patrol_ForceDirectionX);
+
+    public override float GetBehaviorTime() => enemy.Global.LookAround_LookTime;
+}

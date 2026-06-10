@@ -1,0 +1,91 @@
+﻿@page
+@model Web.Razor.Pages.En.SignUpModel
+
+@{
+    ViewData["Title"] = "Sign Up";
+}
+
+@section Scripts {
+    <!-- SweetAlert removed; internal toast system used -->
+}
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <script>
+        window.addEventListener('DOMContentLoaded', function(){
+            if(window.showToast){ showToast('@Model.StatusMessage'.replace(/'/g,"\'"), 'success'); }
+        });
+    </script>
+}
+
+<section class="mq-container mt-space fade-in">
+    @await Html.PartialAsync("_PanelShell", new Web.Razor.Pages.Shared.PanelShellModel { Title = "Create Account", Description = "Join our community and explore the reborn world of Ook.", AdditionalClasses = "panel-p-lg flow" })
+        <div class="row">
+            <div class="col-lg-12" data-reveal>
+                <form asp-action="SignUp" method="post" class="form-modern" novalidate>
+                    <div class="form-row-duo">
+                        <div class="field">
+                            <label asp-for="Username">Username</label>
+                            <div class="input-shell">
+                                <input asp-for="Username" placeholder="Enter Username" />
+                            </div>
+                            <span asp-validation-for="Username" class="text-danger"></span>
+                        </div>
+                        <div class="field">
+                            <label asp-for="Email"></label>
+                            <div class="input-shell">
+                                <input asp-for="Email" placeholder="Enter Email Address" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="form-row-duo">
+                        <div class="field">
+                            <label asp-for="Password"></label>
+                            <div class="input-shell">
+                                <input asp-for="Password" placeholder="Enter Password" />
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="field">
+                            <label asp-for="ConfirmPassword"></label>
+                            <div class="input-shell">
+                                <input asp-for="ConfirmPassword" placeholder="Confirm Password" />
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="form-row-duo">
+                        <div class="field">
+                            <label asp-for="Gender"></label>
+                            <div class="input-shell">
+                                <select asp-for="Gender" asp-items="Pages.En.SignUpModel.Genders">
+                                    <option disabled selected value="">Select…</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="Gender" class="text-danger"></span>
+                        </div>
+                        <div class="field">
+                            <label asp-for="Region"></label>
+                            <div class="input-shell">
+                                <select asp-for="Region" asp-items="Pages.En.SignUpModel.Regions">
+                                    <option disabled selected value="">Select…</option>
+                                </select>
+                            </div>
+                            <span asp-validation-for="Region" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label asp-for="Date">Date of Birth</label>
+                        <div class="input-shell">
+                            <input asp-for="Date" />
+                        </div>
+                        <span asp-validation-for="Date" class="text-danger"></span>
+                    </div>
+                    <div class="field" style="margin-top:4px;">
+                        <button type="submit" class="btn-modern btn-accent btn-form">Sign Up</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+</section>

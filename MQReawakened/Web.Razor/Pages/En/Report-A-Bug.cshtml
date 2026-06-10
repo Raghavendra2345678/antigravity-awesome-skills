@@ -1,0 +1,18 @@
+﻿@page
+@model Web.Razor.Pages.En.ReportABugModel
+
+@{
+    ViewData["Title"] = "Help";
+}
+
+<section class="mq-container mt-space fade-in">
+    @await Html.PartialAsync("_PanelShell", new Web.Razor.Pages.Shared.PanelShellModel { Title = "Help & Support", Description = "Visit our Discord server to receive help with " + (string)ViewData["ServerName"] + ".", AdditionalClasses = "panel-p-lg flow" })
+        <div class="row">
+            <div class="col-12" data-reveal>
+                <div class="discord-shell">
+                    <iframe title="Discord Server" src="https://discord.com/widget?id=@Model.ServerId&theme=dark" class="discord-widget" allowtransparency="true"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

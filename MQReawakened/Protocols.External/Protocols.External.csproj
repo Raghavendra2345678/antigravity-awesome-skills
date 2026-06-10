@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <DebugType>embedded</DebugType>
+        <Platforms>AnyCPU;ARM64</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Folder Include="[A] AchievementsHandler\" />
+        <Folder Include="[C] CashShopHandler\" />
+        <Folder Include="[m] GameCommandHandler\" />
+        <Folder Include="[u] GuildHandler\" />
+        <Folder Include="[H] HousingHandler\" />
+        <Folder Include="[x] ItemHandler\" />
+        <Folder Include="[w] WarningMessageHandler\" />
+        <Folder Include="[r] RoomHandler\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Server.Reawakened\Server.Reawakened.csproj" />
+        <ProjectReference Include="..\Web.Apps\Web.Apps.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Reference Include="A2mCore">
+            <HintPath>..\Server.Reawakened\Dependencies\A2mCore.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp">
+            <HintPath>..\Server.Reawakened\Dependencies\Assembly-CSharp.dll</HintPath>
+        </Reference>
+        <Reference Include="Thrift">
+            <HintPath>..\Server.Reawakened\Thrift\Thrift.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine">
+            <HintPath>..\Server.Reawakened\Dependencies\UnityEngine.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+
+</Project>

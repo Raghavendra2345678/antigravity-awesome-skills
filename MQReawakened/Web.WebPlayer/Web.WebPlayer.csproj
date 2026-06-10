@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <DebugType>embedded</DebugType>
+        <Platforms>AnyCPU;ARM64</Platforms>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Server.Base\Server.Base.csproj" />
+        <ProjectReference Include="..\Server.Reawakened\Server.Reawakened.csproj" />
+        <ProjectReference Include="..\Server.Web\Server.Web.csproj" />
+    </ItemGroup>
+</Project>
