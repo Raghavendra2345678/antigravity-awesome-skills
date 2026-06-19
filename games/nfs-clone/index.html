@@ -48,16 +48,26 @@ body{background:#000;overflow:hidden;font-family:'Arial Black',Arial,sans-serif;
 .controls-hint{color:rgba(255,255,255,0.4);font-size:11px;letter-spacing:2px;margin-top:30px;text-align:center;line-height:2;}
 
 /* Mobile controls */
-#mobile-controls{position:fixed;bottom:0;left:0;width:100%;height:200px;z-index:20;pointer-events:none;display:none;}
-@media (hover:none) and (pointer:coarse){#mobile-controls{display:block;}}
-#joystick-area{position:absolute;bottom:20px;left:20px;width:120px;height:120px;pointer-events:all;}
-#joystick-base{width:100%;height:100%;border-radius:50%;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.3);position:relative;display:flex;align-items:center;justify-content:center;}
-#joystick-knob{width:50px;height:50px;border-radius:50%;background:rgba(255,100,0,0.7);border:2px solid #ff6600;position:absolute;transition:transform 0.05s;}
-#right-btns{position:absolute;bottom:20px;right:20px;display:flex;flex-direction:column;gap:10px;pointer-events:all;}
-.game-btn{width:70px;height:70px;border-radius:50%;border:2px solid;font-size:11px;letter-spacing:1px;font-weight:bold;cursor:pointer;font-family:'Arial Black',Arial,sans-serif;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;user-select:none;}
-#gas-btn{background:rgba(0,200,0,0.3);border-color:#00cc00;color:#00ff00;}
-#brake-btn{background:rgba(200,0,0,0.3);border-color:#cc0000;color:#ff4444;}
-#nitro-btn{background:rgba(0,100,255,0.3);border-color:#0044ff;color:#00aaff;position:absolute;bottom:20px;right:100px;}
+#mobile-controls{position:fixed;inset:0;z-index:20;pointer-events:none;display:none;}
+/* Left half = joystick zone */
+#left-zone{position:absolute;left:0;top:0;width:52%;height:100%;pointer-events:all;}
+/* Dynamic joystick — hidden until finger touches */
+#jbase{position:absolute;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.12s;pointer-events:none;transform:translate(-50%,-50%);}
+#jbase.active{opacity:1;}
+#jknob{width:60px;height:60px;border-radius:50%;background:rgba(255,100,0,0.88);border:2.5px solid #ff6600;position:absolute;will-change:transform;box-shadow:0 0 12px rgba(255,100,0,0.6);}
+/* Right side = action buttons */
+#right-zone{position:absolute;right:18px;bottom:28px;display:flex;flex-direction:column;align-items:center;gap:14px;pointer-events:all;}
+.mbtn{border-radius:50%;border:2px solid;font-weight:bold;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;display:flex;align-items:center;justify-content:center;font-family:'Arial Black',Arial,sans-serif;letter-spacing:1px;transition:transform 0.07s,filter 0.07s;}
+.mbtn:active,.mbtn.active{transform:scale(0.88);filter:brightness(1.6);}
+#gas-btn{width:92px;height:92px;background:rgba(0,180,0,0.28);border-color:#00cc00;color:#00ff44;font-size:14px;box-shadow:inset 0 0 20px rgba(0,200,0,0.15);}
+#brake-btn{width:68px;height:68px;background:rgba(200,0,0,0.28);border-color:#cc0000;color:#ff5555;font-size:11px;}
+#nitro-btn{width:74px;height:74px;background:rgba(0,80,255,0.28);border-color:#0055ff;color:#44aaff;font-size:11px;box-shadow:inset 0 0 16px rgba(0,100,255,0.15);}
+/* HUD repositioning on touch devices */
+body.touch-ui #minimap-wrap{top:16px;left:16px;bottom:auto;}
+body.touch-ui #speedo-wrap{bottom:240px;right:14px;}
+body.touch-ui #speedo-canvas{width:120px;height:120px;}
+body.touch-ui #nitro-track{width:120px;}
+body.touch-ui #km-display{bottom:430px;right:14px;width:120px;}
 </style>
 </head>
 <body>
@@ -91,14 +101,14 @@ body{background:#000;overflow:hidden;font-family:'Arial Black',Arial,sans-serif;
 <div id="nitro-flash"></div>
 
 <div id="mobile-controls">
-  <div id="joystick-area">
-    <div id="joystick-base"><div id="joystick-knob"></div></div>
+  <div id="left-zone">
+    <div id="jbase"><div id="jknob"></div></div>
   </div>
-  <div id="right-btns">
-    <button class="game-btn" id="gas-btn">GAS</button>
-    <button class="game-btn" id="brake-btn">BRAKE</button>
+  <div id="right-zone">
+    <button class="mbtn" id="nitro-btn">N2O</button>
+    <button class="mbtn" id="brake-btn">BRAKE</button>
+    <button class="mbtn" id="gas-btn">GAS</button>
   </div>
-  <button class="game-btn" id="nitro-btn">N2O</button>
 </div>
 
 <div id="splash">
@@ -107,9 +117,8 @@ body{background:#000;overflow:hidden;font-family:'Arial Black',Arial,sans-serif;
   <h1>MOST WANTED</h1>
   <div class="sub">NEXT GEN EDITION</div>
   <button id="start-btn">START ENGINE</button>
-  <div class="controls-hint">
-    WASD / ARROW KEYS · N = NITRO<br>
-    TOUCH: JOYSTICK LEFT · BUTTONS RIGHT
+  <div class="controls-hint" id="ctrl-hint">
+    WASD / ARROW KEYS · N or SPACE = NITRO
   </div>
 </div>
 
@@ -146,12 +155,21 @@ const CAM_HEIGHT = 13;
 const CAM_BACK   = 24;
 const CAM_LERP   = 0.09;
 
+// ── MOBILE DETECTION ───────────────────────────────────────────────
+const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+if(isMobile){
+  document.body.classList.add('touch-ui');
+  document.getElementById('mobile-controls').style.display='block';
+  // Prevent page scroll/zoom during gameplay
+  document.addEventListener('touchmove', e=>{ if(e.cancelable) e.preventDefault(); }, {passive:false});
+}
+
 // ── RENDERER ───────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference:'high-performance' });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isMobile, powerPreference:'high-performance' });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(isMobile ? Math.min(devicePixelRatio, 1.5) : Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = !isMobile; // disable shadows on mobile for perf
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 0.75;
@@ -172,7 +190,7 @@ scene.add(new THREE.AmbientLight(0x1a1a30, 2));
 const moon = new THREE.DirectionalLight(0x3355aa, 1.2);
 moon.position.set(60, 120, 40);
 moon.castShadow = true;
-moon.shadow.mapSize.setScalar(2048);
+moon.shadow.mapSize.setScalar(isMobile ? 512 : 2048);
 moon.shadow.camera.left = moon.shadow.camera.bottom = -300;
 moon.shadow.camera.right = moon.shadow.camera.top  =  300;
 moon.shadow.camera.far = 600;
@@ -511,45 +529,74 @@ const K = {};
 document.addEventListener('keydown', e=>{ K[e.key.toLowerCase()]=true; if(e.key===' ')e.preventDefault(); });
 document.addEventListener('keyup',   e=>{ K[e.key.toLowerCase()]=false; });
 
-const touch = { gas:false, brake:false, nitro:false, sx:0, sy:0, jid:null, jx:0, jy:0 };
+// Separate joy and button states so they never override each other
+const touch = { joyGas:false, joyBrake:false, btnGas:false, btnBrake:false, nitro:false,
+                sx:0, sy:0, jid:null, jbx:0, jby:0 };
 
 function initTouch(){
-  const ja = document.getElementById('joystick-area');
-  const knob = document.getElementById('joystick-knob');
-  ja.addEventListener('touchstart', e=>{
+  if(!isMobile) return;
+  const lz   = document.getElementById('left-zone');
+  const jbase = document.getElementById('jbase');
+  const jknob = document.getElementById('jknob');
+  const MAX   = 62; // max knob travel px (half of jbase width)
+
+  function startJoy(t){
+    touch.jid = t.identifier;
+    touch.jbx = t.clientX;
+    touch.jby = t.clientY;
+    const rect = lz.getBoundingClientRect();
+    jbase.style.left = (t.clientX - rect.left) + 'px';
+    jbase.style.top  = (t.clientY - rect.top)  + 'px';
+    jbase.classList.add('active');
+    jknob.style.transform = 'translate(0,0)';
+  }
+
+  lz.addEventListener('touchstart', e=>{
     e.preventDefault();
-    const t = e.changedTouches[0];
-    touch.jid=t.identifier; touch.jx=t.clientX; touch.jy=t.clientY;
-  },{passive:false});
-  window.addEventListener('touchmove', e=>{
-    e.preventDefault();
+    if(touch.jid !== null) return; // only one joystick touch at a time
+    startJoy(e.changedTouches[0]);
+  }, {passive:false});
+
+  document.addEventListener('touchmove', e=>{
     for(const t of e.changedTouches){
-      if(t.identifier===touch.jid){
-        const dx=t.clientX-touch.jx, dy=t.clientY-touch.jy;
-        const maxR=45, d=Math.min(Math.sqrt(dx*dx+dy*dy),maxR);
-        const a=Math.atan2(dy,dx);
-        touch.sx=Math.cos(a)*(d/maxR);
-        touch.sy=Math.sin(a)*(d/maxR);
-        touch.gas=touch.sy<-0.4;
-        touch.brake=touch.sy>0.4;
-        knob.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
-      }
+      if(t.identifier !== touch.jid) continue;
+      const dx = t.clientX - touch.jbx;
+      const dy = t.clientY - touch.jby;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const cl   = Math.min(dist, MAX);
+      const ang  = Math.atan2(dy, dx);
+      const kx   = Math.cos(ang)*cl;
+      const ky   = Math.sin(ang)*cl;
+      jknob.style.transform = `translate(${kx}px,${ky}px)`;
+      touch.sx       = kx / MAX;           // -1..1 (left/right steering)
+      touch.sy       = ky / MAX;           // -1..1 (up=gas, down=brake)
+      touch.joyGas   = touch.sy < -0.22;
+      touch.joyBrake = touch.sy >  0.22;
     }
-  },{passive:false});
-  window.addEventListener('touchend', e=>{
-    for(const t of e.changedTouches){
-      if(t.identifier===touch.jid){
-        touch.jid=null; touch.sx=0; touch.sy=0; touch.gas=false; touch.brake=false;
-        knob.style.transform='translate(0,0)';
-      }
-    }
-  });
-  const bind=(id,prop)=>{
-    const el=document.getElementById(id);
-    ['touchstart','mousedown'].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();touch[prop]=true;},{passive:false}));
-    ['touchend','mouseup'].forEach(ev=>el.addEventListener(ev,()=>{touch[prop]=false;}));
-  };
-  bind('gas-btn','gas'); bind('brake-btn','brake'); bind('nitro-btn','nitro');
+  }, {passive:false});
+
+  function endJoy(id){
+    if(id !== touch.jid) return;
+    touch.jid = null;
+    touch.sx = 0; touch.sy = 0;
+    touch.joyGas = false; touch.joyBrake = false;
+    jbase.classList.remove('active');
+    jknob.style.transform = 'translate(0,0)';
+  }
+  document.addEventListener('touchend',    e=>{ for(const t of e.changedTouches) endJoy(t.identifier); });
+  document.addEventListener('touchcancel', e=>{ for(const t of e.changedTouches) endJoy(t.identifier); });
+
+  // Button helpers — separate props so joystick can't clobber them
+  function btn(id, prop){
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); touch[prop]=true;  el.classList.add('active'); }, {passive:false});
+    el.addEventListener('touchend',   ()=>{ touch[prop]=false; el.classList.remove('active'); });
+    el.addEventListener('touchcancel',()=>{ touch[prop]=false; el.classList.remove('active'); });
+    // Mouse fallback (desktop testing)
+    el.addEventListener('mousedown',  ()=>{ touch[prop]=true;  el.classList.add('active'); });
+    el.addEventListener('mouseup',    ()=>{ touch[prop]=false; el.classList.remove('active'); });
+  }
+  btn('gas-btn','btnGas'); btn('brake-btn','btnBrake'); btn('nitro-btn','nitro');
 }
 
 // ── COLLISION ──────────────────────────────────────────────────────
@@ -593,8 +640,8 @@ function updateAudio(speedRatio, nitroOn){
 function updatePlayer(){
   if(ps.stunFrames>0){ ps.stunFrames--; ps.speed*=0.92; applyPlayerMesh(); return; }
 
-  const gas   = K['w']||K['arrowup']  ||touch.gas;
-  const brk   = K['s']||K['arrowdown'] ||touch.brake;
+  const gas   = K['w']||K['arrowup']   ||touch.joyGas  ||touch.btnGas;
+  const brk   = K['s']||K['arrowdown'] ||touch.joyBrake||touch.btnBrake;
   const left  = K['a']||K['arrowleft'];
   const right = K['d']||K['arrowright'];
   const nitro = (K['n']||K[' ']||touch.nitro) && ps.nitro>0;
@@ -618,7 +665,7 @@ function updatePlayer(){
   let steerVal=0;
   if(left)  steerVal= STEER_MAX;
   if(right) steerVal=-STEER_MAX;
-  if(Math.abs(touch.sx)>0.25) steerVal=-touch.sx*STEER_MAX;
+  if(Math.abs(touch.sx)>0.08) steerVal=-touch.sx*STEER_MAX;
   if(ps.speed<0) steerVal=-steerVal;
   ps.heading+=steerVal*spRatio;
 
@@ -851,6 +898,12 @@ window.addEventListener('resize',()=>{
 
 document.getElementById('start-btn').addEventListener('click',startGame);
 document.getElementById('start-btn').addEventListener('touchstart',e=>{e.preventDefault();startGame();},{passive:false});
+
+// Show the right control hint
+if(isMobile){
+  document.getElementById('ctrl-hint').innerHTML=
+    'LEFT THUMB: JOYSTICK (steer + gas/brake)<br>RIGHT THUMB: GAS · BRAKE · N2O';
+}
 
 // ── BOOT ───────────────────────────────────────────────────────────
 buildCity();
